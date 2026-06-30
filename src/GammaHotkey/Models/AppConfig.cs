@@ -40,6 +40,7 @@ public sealed class AppConfig
     public List<DirectBindingConfig> Direct { get; set; } = new();
     public bool SwallowMouse { get; set; } = true;
     public bool ApplyToAllMonitors { get; set; } = true;
+    public List<string> SelectedMonitors { get; set; } = new();
     public bool RunOnStartup { get; set; }
 
     /// <summary>Whether to start listening for triggers automatically on launch.</summary>

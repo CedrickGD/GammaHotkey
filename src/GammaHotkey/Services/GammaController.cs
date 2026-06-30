@@ -1,8 +1,11 @@
-using System.Diagnostics;
+using System.Runtime.InteropServices;
 using GammaHotkey.Models;
 using Microsoft.Win32;
 
 namespace GammaHotkey.Services;
+
+/// <summary>A display attached to the desktop.</summary>
+public sealed record MonitorInfo(string DeviceName, string FriendlyName, bool IsPrimary);
 
 /// <summary>
 /// Applies a gamma value to the display(s) via the GDI gamma ramp – the same
@@ -17,7 +20,8 @@ public sealed class GammaController : IDisposable
     private readonly Dictionary<string, ushort[]> _originals = new();
 
     private double _currentGamma = GammaPresets.Default;
-    private bool _applyToAllMonitors = true;
+    private bool _allMonitors = true;
+    private readonly HashSet<string> _selected = new(StringComparer.OrdinalIgnoreCase);
 
     public GammaController()
     {
@@ -32,10 +36,39 @@ public sealed class GammaController : IDisposable
         get { lock (_gate) return _currentGamma; }
     }
 
-    public bool ApplyToAllMonitors
+    /// <summary>Chooses which displays gamma is applied to (all, or a named subset).</summary>
+    public void SetTargets(bool allMonitors, IEnumerable<string> selectedDeviceNames)
     {
-        get { lock (_gate) return _applyToAllMonitors; }
-        set { lock (_gate) _applyToAllMonitors = value; }
+        lock (_gate)
+        {
+            _allMonitors = allMonitors;
+            _selected.Clear();
+            foreach (var n in selectedDeviceNames)
+                if (!string.IsNullOrEmpty(n))
+                    _selected.Add(n);
+        }
+    }
+
+    /// <summary>Enumerates the displays currently attached to the desktop.</summary>
+    public IReadOnlyList<MonitorInfo> ListMonitors()
+    {
+        var list = new List<MonitorInfo>();
+        var dd = new NativeMethods.DISPLAY_DEVICE { cb = Marshal.SizeOf<NativeMethods.DISPLAY_DEVICE>() };
+        for (uint i = 0; NativeMethods.EnumDisplayDevices(null, i, ref dd, 0); i++)
+        {
+            if ((dd.StateFlags & NativeMethods.DISPLAY_DEVICE_ATTACHED_TO_DESKTOP) != 0)
+            {
+                bool primary = (dd.StateFlags & NativeMethods.DISPLAY_DEVICE_PRIMARY_DEVICE) != 0;
+                string adapter = dd.DeviceName;
+                string friendly = adapter;
+                var mon = new NativeMethods.DISPLAY_DEVICE { cb = Marshal.SizeOf<NativeMethods.DISPLAY_DEVICE>() };
+                if (NativeMethods.EnumDisplayDevices(adapter, 0, ref mon, 0) && !string.IsNullOrWhiteSpace(mon.DeviceString))
+                    friendly = mon.DeviceString;
+                list.Add(new MonitorInfo(adapter, friendly, primary));
+            }
+            dd.cb = Marshal.SizeOf<NativeMethods.DISPLAY_DEVICE>();
+        }
+        return list;
     }
 
     /// <summary>
@@ -158,15 +191,24 @@ public sealed class GammaController : IDisposable
     }
 
     /// <summary>The device names to act on, or a single "" entry meaning the primary DC.</summary>
-    private IEnumerable<string> TargetNames()
+    private List<string> TargetNames()
     {
-        if (_applyToAllMonitors)
+        bool all;
+        HashSet<string> selected;
+        lock (_gate) // reentrant — Restore/CaptureOriginals already hold _gate
         {
-            var names = AttachedDisplayNames().ToList();
-            if (names.Count > 0)
-                return names;
+            all = _allMonitors;
+            selected = new HashSet<string>(_selected, StringComparer.OrdinalIgnoreCase);
         }
-        return new[] { string.Empty };
+
+        var attached = AttachedDisplayNames().ToList();
+        if (attached.Count == 0)
+            return new List<string> { string.Empty };
+        if (all)
+            return attached;
+
+        var chosen = attached.Where(a => selected.Contains(a)).ToList();
+        return chosen.Count > 0 ? chosen : attached; // stale/empty selection -> all, never nothing
     }
 
     private void ForEachTarget(Action<IntPtr> action)

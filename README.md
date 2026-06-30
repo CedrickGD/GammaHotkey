@@ -1,9 +1,10 @@
 # GammaHotkey
 
 Change your screen **gamma with a hotkey or mouse button** — no more opening the
-NVIDIA Control Panel and dragging the slider every time. Bind a key or a Logitech
+NVIDIA / AMD control panel and dragging the slider every time. Bind a key or a Logitech
 mouse button, press it in‑game, and your gamma jumps to a preset. A beautiful little
 Windows tray app that also **generates the Logitech G HUB Lua script** for you.
+**Works on any GPU — NVIDIA, AMD and Intel.**
 
 > **γ** Built with C# / WPF (.NET 9). Single window, lives in the system tray, no installer.
 
@@ -24,8 +25,9 @@ Windows tray app that also **generates the Logitech G HUB Lua script** for you.
   buttons to the right hotkeys. Copy it or save it as `.lua`.
 - **Live preview** — drag the slider and watch your screen change instantly; `Apply / Test`
   and `Reset to 1.0` buttons.
-- **Runs in the tray**, optional **run‑on‑startup**, applies to **all monitors**,
-  and **restores your original gamma on exit**.
+- **Monitor picker** — apply to **all monitors or a chosen subset** (detected live).
+- **Runs in the tray**, optional **run‑on‑startup**, dark title bar, and
+  **restores your original gamma on exit**.
 
 It uses the Windows GDI gamma‑ramp API (`SetDeviceGammaRamp`) — the *same* hardware
 lookup table the NVIDIA/AMD/Intel control‑panel gamma sliders write to — so it's
@@ -96,8 +98,8 @@ numbering (`2=Right 3=Middle 4=Back 5=Forward 6+=extra`). Uncomment the
 The gamma‑ramp API works on essentially every normal desktop GPU output, but Windows
 **disables it in a few situations**. If `Apply / Test` says *“Couldn’t set gamma”*:
 
-- **HDR is on.** While Windows HDR is enabled, the gamma ramp is disabled (the NVIDIA
-  gamma slider goes inert too). **Turn HDR off** for the display you want to adjust.
+- **HDR is on.** While Windows HDR is enabled, the gamma ramp is disabled (your GPU's
+  control‑panel gamma slider goes inert too). **Turn HDR off** for the display you want.
 - **Remote Desktop / virtual or streaming display.** RDP and many virtual‑display
   drivers (Parsec, Sunshine, headless/IddCx adapters) don’t implement gamma ramps, so
   the call fails. It works when you’re at the physical machine on a real GPU output.

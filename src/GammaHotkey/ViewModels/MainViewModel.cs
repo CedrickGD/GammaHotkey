@@ -38,15 +38,17 @@ public sealed class MainViewModel : ObservableObject
             _statusTimer.Stop();
             Status = IsListening ? $"Listening{ActiveTriggerSummary()}" : "Idle";
             StatusIsWarning = false;
+            StatusIsSuccess = false;
         };
 
         ApplyPreviewCommand = new RelayCommand(() => ApplyGamma(PreviewGamma));
         ResetCommand = new RelayCommand(ResetGamma);
-        GenerateLuaCommand = new RelayCommand(() => { RegenerateLua(); SetStatus("Script generated"); });
+        GenerateLuaCommand = new RelayCommand(() => { RegenerateLua(); SetStatus("Script generated", success: true); });
         CopyLuaCommand = new RelayCommand(CopyLua);
         SaveLuaCommand = new RelayCommand(SaveLua);
         AddBindingCommand = new RelayCommand(AddBinding);
         RemoveBindingCommand = new RelayCommand(RemoveBinding);
+        RefreshMonitorsCommand = new RelayCommand(RefreshMonitors);
 
         LoadFrom(_store.Load());
     }
@@ -150,16 +152,37 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
-    private bool _applyToAllMonitors = true;
-    public bool ApplyToAllMonitors
+    public ObservableCollection<MonitorOptionViewModel> Monitors { get; } = new();
+
+    private bool _allMonitors = true;
+    public bool AllMonitors
     {
-        get => _applyToAllMonitors;
+        get => _allMonitors;
         set
         {
-            if (!SetField(ref _applyToAllMonitors, value))
+            if (!SetField(ref _allMonitors, value))
                 return;
-            _gamma.ApplyToAllMonitors = value;
+            OnPropertyChanged(nameof(IndividualMonitorsEnabled));
+            OnPropertyChanged(nameof(MonitorsSummary));
+            PushTargets();
             Save();
+        }
+    }
+
+    public bool IndividualMonitorsEnabled => !_allMonitors;
+
+    public string MonitorsSummary
+    {
+        get
+        {
+            if (_allMonitors)
+                return "All monitors";
+            var sel = Monitors.Where(m => m.IsSelected).ToList();
+            if (sel.Count == 0)
+                return "All monitors";
+            if (sel.Count == 1)
+                return sel[0].Display;
+            return $"{sel.Count} of {Monitors.Count} monitors";
         }
     }
 
@@ -181,6 +204,13 @@ public sealed class MainViewModel : ObservableObject
         private set => SetField(ref _statusIsWarning, value);
     }
 
+    private bool _statusIsSuccess;
+    public bool StatusIsSuccess
+    {
+        get => _statusIsSuccess;
+        private set => SetField(ref _statusIsSuccess, value);
+    }
+
     private string _luaScript = string.Empty;
     public string LuaScript
     {
@@ -199,6 +229,7 @@ public sealed class MainViewModel : ObservableObject
     public RelayCommand SaveLuaCommand { get; }
     public RelayCommand AddBindingCommand { get; }
     public RelayCommand RemoveBindingCommand { get; }
+    public RelayCommand RefreshMonitorsCommand { get; }
 
     // ----------------------------------------------------------- load / save
 
@@ -229,8 +260,15 @@ public sealed class MainViewModel : ObservableObject
         _mode = cfg.Mode;
         _cycleTrigger = cfg.Cycle.Trigger;
         _cycleWrap = cfg.Cycle.Wrap;
-        _applyToAllMonitors = cfg.ApplyToAllMonitors;
-        _gamma.ApplyToAllMonitors = cfg.ApplyToAllMonitors;
+        _allMonitors = cfg.ApplyToAllMonitors;
+        RefreshMonitors();
+        if (cfg.SelectedMonitors.Count > 0)
+        {
+            var savedSel = new HashSet<string>(cfg.SelectedMonitors, StringComparer.OrdinalIgnoreCase);
+            foreach (var m in Monitors)
+                m.IsSelected = savedSel.Contains(m.DeviceName);
+        }
+        PushTargets();
         SwallowMouse = cfg.SwallowMouse;
         _runOnStartup = StartupManager.IsEnabled();
         _isListening = cfg.Listening;
@@ -239,7 +277,9 @@ public sealed class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(IsCycleMode));
         OnPropertyChanged(nameof(IsDirectMode));
         OnPropertyChanged(nameof(CycleTrigger));
-        OnPropertyChanged(nameof(ApplyToAllMonitors));
+        OnPropertyChanged(nameof(AllMonitors));
+        OnPropertyChanged(nameof(IndividualMonitorsEnabled));
+        OnPropertyChanged(nameof(MonitorsSummary));
         OnPropertyChanged(nameof(RunOnStartup));
         OnPropertyChanged(nameof(IsListening));
         OnPropertyChanged(nameof(ListeningLabel));
@@ -258,7 +298,8 @@ public sealed class MainViewModel : ObservableObject
             Version = 1,
             Mode = _mode,
             SwallowMouse = SwallowMouse,
-            ApplyToAllMonitors = _applyToAllMonitors,
+            ApplyToAllMonitors = _allMonitors,
+            SelectedMonitors = Monitors.Where(m => m.IsSelected).Select(m => m.DeviceName).ToList(),
             RunOnStartup = _runOnStartup,
             Listening = _isListening,
         };
@@ -311,6 +352,47 @@ public sealed class MainViewModel : ObservableObject
             : DirectBindings.Select(b => b.Trigger).Where(t => !t.IsEmpty);
 
         _hooks.UpdateBindings(active, SwallowMouse);
+    }
+
+    // ----------------------------------------------------------- monitors
+
+    /// <summary>Re-enumerates attached displays, preserving the current selection.</summary>
+    public void RefreshMonitors()
+    {
+        var prevSelected = new HashSet<string>(
+            Monitors.Where(m => m.IsSelected).Select(m => m.DeviceName), StringComparer.OrdinalIgnoreCase);
+        bool hadList = Monitors.Count > 0;
+
+        foreach (var m in Monitors)
+            m.PropertyChanged -= OnMonitorChanged;
+        Monitors.Clear();
+
+        foreach (var mon in _gamma.ListMonitors())
+        {
+            string shortName = mon.DeviceName.Replace(@"\\.\", string.Empty);
+            string label = $"{shortName} — {mon.FriendlyName}" + (mon.IsPrimary ? "  (primary)" : string.Empty);
+            bool selected = !hadList || prevSelected.Contains(mon.DeviceName);
+            var vm = new MonitorOptionViewModel(mon.DeviceName, label, mon.IsPrimary, selected);
+            vm.PropertyChanged += OnMonitorChanged;
+            Monitors.Add(vm);
+        }
+        OnPropertyChanged(nameof(MonitorsSummary));
+    }
+
+    private void OnMonitorChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(MonitorOptionViewModel.IsSelected))
+            return;
+        PushTargets();
+        OnPropertyChanged(nameof(MonitorsSummary));
+        Save();
+    }
+
+    private void PushTargets()
+    {
+        var selected = Monitors.Where(m => m.IsSelected).Select(m => m.DeviceName).ToList();
+        bool all = _allMonitors || selected.Count == 0;
+        _gamma.SetTargets(all, selected);
     }
 
     // ----------------------------------------------------------- dispatch
@@ -369,7 +451,7 @@ public sealed class MainViewModel : ObservableObject
         switch (result)
         {
             case GammaController.ApplyResult.Success:
-                SetStatus($"Gamma {shown}");
+                SetStatus($"Gamma {shown}", success: true);
                 break;
             case GammaController.ApplyResult.ClampedByWindows:
                 SetStatus($"Gamma {shown} — Windows limited the range (see README)", warning: true);
@@ -385,7 +467,7 @@ public sealed class MainViewModel : ObservableObject
         SetPreviewField(GammaPresets.Default);
         _gamma.Apply(GammaPresets.Default);
         _cycleIndex = -1;
-        SetStatus("Reset to 1.00");
+        SetStatus("Reset to 1.00", success: true);
     }
 
     // ----------------------------------------------------------- lua actions
@@ -399,7 +481,7 @@ public sealed class MainViewModel : ObservableObject
         try
         {
             Clipboard.SetText(LuaScript);
-            SetStatus("Script copied");
+            SetStatus("Script copied", success: true);
         }
         catch
         {
@@ -424,7 +506,7 @@ public sealed class MainViewModel : ObservableObject
             try
             {
                 File.WriteAllText(dlg.FileName, LuaScript);
-                SetStatus($"Saved {Path.GetFileName(dlg.FileName)}");
+                SetStatus($"Saved {Path.GetFileName(dlg.FileName)}", success: true);
             }
             catch
             {
@@ -455,10 +537,11 @@ public sealed class MainViewModel : ObservableObject
 
     // ----------------------------------------------------------- status helper
 
-    private void SetStatus(string text, bool warning = false)
+    private void SetStatus(string text, bool warning = false, bool success = false)
     {
         Status = text;
         StatusIsWarning = warning;
+        StatusIsSuccess = success;
         _statusTimer.Stop();
         _statusTimer.Start();
     }

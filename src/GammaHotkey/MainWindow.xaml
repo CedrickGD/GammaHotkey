@@ -34,10 +34,14 @@
                 BorderBrush="{StaticResource Border}" BorderThickness="0,0,0,1">
             <Grid>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <Border Width="30" Height="30" CornerRadius="8" Background="{StaticResource Accent}">
-                        <TextBlock Text="&#x03B3;" FontSize="18" FontWeight="Bold"
-                                   Foreground="{StaticResource OnAccent}"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <Border Width="32" Height="32" CornerRadius="9" Background="{StaticResource Accent}">
+                        <Grid Width="22" Height="22">
+                            <Ellipse Width="9" Height="9" Fill="{StaticResource OnAccent}"
+                                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Path Stroke="{StaticResource OnAccent}" StrokeThickness="1.9"
+                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                  Data="M11,1 V3.4 M11,18.6 V21 M1,11 H3.4 M18.6,11 H21 M3.9,3.9 L5.6,5.6 M16.4,16.4 L18.1,18.1 M18.1,3.9 L16.4,5.6 M5.6,16.4 L3.9,18.1"/>
+                        </Grid>
                     </Border>
                     <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
                         <TextBlock Text="GammaHotkey" FontSize="18" FontWeight="SemiBold"/>
@@ -47,13 +51,30 @@
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                    <Ellipse Width="9" Height="9" VerticalAlignment="Center" Margin="0,0,8,0">
+                    <Ellipse Width="9" Height="9" VerticalAlignment="Center" Margin="0,0,8,0"
+                             RenderTransformOrigin="0.5,0.5">
+                        <Ellipse.RenderTransform>
+                            <ScaleTransform ScaleX="1" ScaleY="1"/>
+                        </Ellipse.RenderTransform>
                         <Ellipse.Style>
                             <Style TargetType="Ellipse">
                                 <Setter Property="Fill" Value="{StaticResource TextDisabled}"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsListening}" Value="True">
                                         <Setter Property="Fill" Value="{StaticResource Success}"/>
+                                        <DataTrigger.EnterActions>
+                                            <BeginStoryboard Name="DotPulse">
+                                                <Storyboard RepeatBehavior="Forever" AutoReverse="True">
+                                                    <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                                     To="1.7" Duration="0:0:0.9"/>
+                                                    <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                                     To="1.7" Duration="0:0:0.9"/>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </DataTrigger.EnterActions>
+                                        <DataTrigger.ExitActions>
+                                            <StopStoryboard BeginStoryboardName="DotPulse"/>
+                                        </DataTrigger.ExitActions>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
@@ -94,8 +115,8 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <StackPanel Orientation="Horizontal" Margin="0,0,16,12">
-                                        <TextBlock Text="{Binding Name}" Width="80" VerticalAlignment="Center"
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,28,14">
+                                        <TextBlock Text="{Binding Name}" Width="92" VerticalAlignment="Center"
                                                    FontSize="13"/>
                                         <TextBox Style="{StaticResource NumberBox}"
                                                  Text="{Binding Value, StringFormat={}{0:0.00}, UpdateSourceTrigger=LostFocus}"/>
@@ -150,6 +171,25 @@
 
                         <!-- Cycle panel -->
                         <StackPanel Margin="0,16,0,0" Visibility="{Binding IsCycleMode, Converter={StaticResource BoolToVis}}">
+                            <StackPanel.RenderTransform>
+                                <TranslateTransform Y="0"/>
+                            </StackPanel.RenderTransform>
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsCycleMode}" Value="True">
+                                            <DataTrigger.EnterActions>
+                                                <BeginStoryboard>
+                                                    <Storyboard>
+                                                        <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.18"/>
+                                                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" From="8" To="0" Duration="0:0:0.18"/>
+                                                    </Storyboard>
+                                                </BeginStoryboard>
+                                            </DataTrigger.EnterActions>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
                             <TextBlock Style="{StaticResource HelperText}"
                                        Text="One key steps through the presets you pick, in order."/>
                             <TextBlock Text="Presets in cycle" Style="{StaticResource FieldLabel}" Margin="0,14,0,8"/>
@@ -174,6 +214,25 @@
 
                         <!-- Direct panel -->
                         <StackPanel Margin="0,16,0,0" Visibility="{Binding IsDirectMode, Converter={StaticResource BoolToVis}}">
+                            <StackPanel.RenderTransform>
+                                <TranslateTransform Y="0"/>
+                            </StackPanel.RenderTransform>
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsDirectMode}" Value="True">
+                                            <DataTrigger.EnterActions>
+                                                <BeginStoryboard>
+                                                    <Storyboard>
+                                                        <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.18"/>
+                                                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" From="8" To="0" Duration="0:0:0.18"/>
+                                                    </Storyboard>
+                                                </BeginStoryboard>
+                                            </DataTrigger.EnterActions>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
                             <TextBlock Style="{StaticResource HelperText}"
                                        Text="Bind one key to one preset. Press it to jump straight there."/>
 
@@ -184,11 +243,11 @@
                             <ItemsControl ItemsSource="{Binding DirectBindings}" Margin="0,8,0,0">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Grid Margin="0,0,0,8">
+                                        <Grid Margin="0,0,0,10">
                                             <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="200"/>
+                                                <ColumnDefinition Width="210"/>
                                                 <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="160"/>
+                                                <ColumnDefinition Width="*" MinWidth="150"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <ctrl:KeyCapturePill Grid.Column="0" Trigger="{Binding Trigger, Mode=TwoWay}"/>
@@ -223,15 +282,23 @@
                             <Button Style="{StaticResource PrimaryButton}" Content="Generate Lua script"
                                     HorizontalAlignment="Left" Command="{Binding GenerateLuaCommand}"/>
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                <Button Style="{StaticResource SecondaryButton}" Content="Copy"
-                                        Command="{Binding CopyLuaCommand}" Margin="0,0,8,0"/>
-                                <Button Style="{StaticResource SecondaryButton}" Content="Save .lua"
-                                        Command="{Binding SaveLuaCommand}"/>
+                                <Button Style="{StaticResource IconButton}" ToolTip="Copy to clipboard"
+                                        Command="{Binding CopyLuaCommand}" Margin="0,0,8,0">
+                                    <Path Style="{StaticResource IconPath}" Data="{StaticResource CopyGeometry}"/>
+                                </Button>
+                                <Button Style="{StaticResource IconButton}" ToolTip="Save as .lua"
+                                        Command="{Binding SaveLuaCommand}" Margin="0,0,8,0">
+                                    <Path Style="{StaticResource IconPath}" Data="{StaticResource SaveGeometry}"/>
+                                </Button>
+                                <Button Style="{StaticResource IconButton}" ToolTip="Open in a larger window"
+                                        Click="ExpandScript_Click">
+                                    <Path Style="{StaticResource IconPath}" Data="{StaticResource ExpandGeometry}"/>
+                                </Button>
                             </StackPanel>
                         </Grid>
 
                         <Border Margin="0,14,0,0" CornerRadius="8" Background="{StaticResource SurfaceInput}"
-                                BorderBrush="{StaticResource Border}" BorderThickness="1" MaxHeight="200">
+                                BorderBrush="{StaticResource Border}" BorderThickness="1" MinHeight="130" MaxHeight="320">
                             <TextBox Text="{Binding LuaScript, Mode=OneWay}" IsReadOnly="True"
                                      Background="Transparent" BorderThickness="0" Foreground="{StaticResource TextPrimary}"
                                      FontFamily="{StaticResource MonoFont}" FontSize="12.5" Padding="12"
@@ -254,22 +321,59 @@
         <Border Grid.Row="2" Padding="24,12" Background="{StaticResource BgWindow}"
                 BorderBrush="{StaticResource Border}" BorderThickness="0,1,0,0">
             <Grid>
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                     <CheckBox Style="{StaticResource ThemedCheck}" Content="Run on startup"
                               IsChecked="{Binding RunOnStartup}"/>
-                    <CheckBox Style="{StaticResource ThemedCheck}" Content="All monitors" Margin="20,0,0,0"
-                              IsChecked="{Binding ApplyToAllMonitors}"/>
-                    <TextBlock Text="Closing the window keeps it running in the tray."
-                               Foreground="{StaticResource TextSecondary}" FontSize="12"
-                               VerticalAlignment="Center" Margin="20,0,0,0"/>
+
+                    <Button x:Name="MonitorsButton" Style="{StaticResource SecondaryButton}" Margin="16,0,0,0"
+                            Click="MonitorsButton_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <Path Style="{StaticResource IconPath}" Width="16" Height="16" Margin="0,0,8,0"
+                                  Data="{StaticResource MonitorGeometry}"/>
+                            <TextBlock Text="{Binding MonitorsSummary}" VerticalAlignment="Center"/>
+                            <TextBlock Text="&#x25B4;" Margin="8,0,0,0" VerticalAlignment="Center"
+                                       Foreground="{StaticResource TextSecondary}"/>
+                        </StackPanel>
+                    </Button>
+
+                    <Popup x:Name="MonitorsPopup" PlacementTarget="{Binding ElementName=MonitorsButton}"
+                           Placement="Top" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade" VerticalOffset="-6">
+                        <Border Background="{StaticResource SurfaceElevated}" BorderBrush="{StaticResource Border}"
+                                BorderThickness="1" CornerRadius="10" Padding="12" Effect="{StaticResource CardShadow}" MinWidth="290">
+                            <StackPanel>
+                                <TextBlock Text="APPLY GAMMA TO" Style="{StaticResource SectionHeader}" Margin="2,0,0,10"/>
+                                <CheckBox Style="{StaticResource ThemedCheck}" Content="All monitors"
+                                          IsChecked="{Binding AllMonitors}" Margin="2,0,2,8"/>
+                                <Border Height="1" Background="{StaticResource Border}" Margin="0,2,0,8"/>
+                                <ItemsControl ItemsSource="{Binding Monitors}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <CheckBox Style="{StaticResource ThemedCheck}" Margin="2,5" Content="{Binding Display}"
+                                                      IsChecked="{Binding IsSelected}"
+                                                      IsEnabled="{Binding DataContext.IndividualMonitorsEnabled, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+                    </Popup>
                 </StackPanel>
 
-                <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"
-                           Text="{Binding Status}">
+                <TextBlock Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"
+                           Margin="16,0,0,0" TextTrimming="CharacterEllipsis"
+                           Text="{Binding Status}" ToolTip="{Binding Status}">
                     <TextBlock.Style>
                         <Style TargetType="TextBlock">
                             <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
                             <Style.Triggers>
+                                <DataTrigger Binding="{Binding StatusIsSuccess}" Value="True">
+                                    <Setter Property="Foreground" Value="{StaticResource Success}"/>
+                                </DataTrigger>
                                 <DataTrigger Binding="{Binding StatusIsWarning}" Value="True">
                                     <Setter Property="Foreground" Value="{StaticResource Danger}"/>
                                 </DataTrigger>

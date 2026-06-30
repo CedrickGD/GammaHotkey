@@ -1,0 +1,50 @@
+<Window x:Class="GammaHotkey.ScriptWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="G HUB Lua script" Height="620" Width="800"
+        MinHeight="360" MinWidth="480"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource BgWindow}"
+        UseLayoutRounding="True"
+        TextOptions.TextFormattingMode="Ideal"
+        TextElement.Foreground="{StaticResource TextPrimary}"
+        FontFamily="{StaticResource AppFont}"
+        Icon="pack://application:,,,/Assets/app.ico">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="0,0,0,14">
+            <TextBlock Text="GENERATED LUA SCRIPT" Style="{StaticResource SectionHeader}"
+                       VerticalAlignment="Center" Margin="0"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Style="{StaticResource IconButton}" ToolTip="Copy to clipboard"
+                        Command="{Binding CopyLuaCommand}" Margin="0,0,8,0">
+                    <Path Style="{StaticResource IconPath}" Data="{StaticResource CopyGeometry}"/>
+                </Button>
+                <Button Style="{StaticResource IconButton}" ToolTip="Save as .lua"
+                        Command="{Binding SaveLuaCommand}">
+                    <Path Style="{StaticResource IconPath}" Data="{StaticResource SaveGeometry}"/>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <Border Grid.Row="1" CornerRadius="8" Background="{StaticResource SurfaceInput}"
+                BorderBrush="{StaticResource Border}" BorderThickness="1">
+            <TextBox Text="{Binding LuaScript, Mode=OneWay}" IsReadOnly="True"
+                     Background="Transparent" BorderThickness="0" Foreground="{StaticResource TextPrimary}"
+                     FontFamily="{StaticResource MonoFont}" FontSize="13" Padding="14"
+                     VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                     TextWrapping="NoWrap" AcceptsReturn="True"/>
+        </Border>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+            <TextBlock Text="{Binding Status}" VerticalAlignment="Center" Margin="0,0,16,0"
+                       FontSize="12" Foreground="{StaticResource TextSecondary}"/>
+            <Button Style="{StaticResource SecondaryButton}" Content="Close" Click="Close_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

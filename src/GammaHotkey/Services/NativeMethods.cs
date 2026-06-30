@@ -34,6 +34,7 @@ internal static class NativeMethods
     // ---------------------------------------------------------------- Display enumeration
 
     public const int DISPLAY_DEVICE_ATTACHED_TO_DESKTOP = 0x00000001;
+    public const int DISPLAY_DEVICE_PRIMARY_DEVICE = 0x00000004;
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
     public struct DISPLAY_DEVICE
@@ -81,6 +82,14 @@ internal static class NativeMethods
 
     [DllImport("kernel32.dll")]
     public static extern uint GetCurrentThreadId();
+
+    // ---------------------------------------------------------------- Dark title bar
+
+    [DllImport("dwmapi.dll")]
+    public static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
+
+    public const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
+    public const int DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1 = 19;
 
     [StructLayout(LayoutKind.Sequential)]
     public struct KBDLLHOOKSTRUCT

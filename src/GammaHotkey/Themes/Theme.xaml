@@ -31,6 +31,51 @@
 
     <BooleanToVisibilityConverter x:Key="BoolToVis"/>
 
+    <!-- ============================================================ Icon glyphs -->
+    <StreamGeometry x:Key="CopyGeometry">M11,9 H16 A2,2 0 0 1 18,11 V18 A2,2 0 0 1 16,20 H11 A2,2 0 0 1 9,18 V11 A2,2 0 0 1 11,9 Z M7,15 A2,2 0 0 1 5,13 V6 A2,2 0 0 1 7,4 H14 A2,2 0 0 1 16,6</StreamGeometry>
+    <StreamGeometry x:Key="SaveGeometry">M12,4 V14 M8.5,10.5 L12,14 L15.5,10.5 M5,16.5 V19 H19 V16.5</StreamGeometry>
+    <StreamGeometry x:Key="ExpandGeometry">M13,5 H19 V11 M19,5 L12.5,11.5 M11,19 H5 V13 M5,19 L11.5,12.5</StreamGeometry>
+    <StreamGeometry x:Key="MonitorGeometry">M4,5 H20 V16 H4 Z M9,20 H15 M12,16 V20</StreamGeometry>
+    <StreamGeometry x:Key="CheckGeometry">M4,12 L9,17 L20,6</StreamGeometry>
+
+    <Style x:Key="IconPath" TargetType="Path">
+        <Setter Property="Stroke" Value="{StaticResource TextPrimary}"/>
+        <Setter Property="StrokeThickness" Value="1.7"/>
+        <Setter Property="Fill" Value="Transparent"/>
+        <Setter Property="Width" Value="20"/>
+        <Setter Property="Height" Value="20"/>
+        <Setter Property="Stretch" Value="Uniform"/>
+        <Setter Property="StrokeLineJoin" Value="Round"/>
+        <Setter Property="StrokeStartLineCap" Value="Round"/>
+        <Setter Property="StrokeEndLineCap" Value="Round"/>
+    </Style>
+
+    <!-- Square icon button that matches the secondary button look -->
+    <Style x:Key="IconButton" TargetType="Button">
+        <Setter Property="Width" Value="40"/>
+        <Setter Property="Height" Value="36"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd" CornerRadius="8" Background="{StaticResource SurfaceElevated}"
+                            BorderBrush="{StaticResource Border}" BorderThickness="1">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource SurfaceHover}"/>
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource Accent}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="#1C2433"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- ============================================================ Card -->
     <Style x:Key="Card" TargetType="Border">
         <Setter Property="Background" Value="{StaticResource Surface}"/>
@@ -298,7 +343,7 @@
     </Style>
 
     <Style x:Key="NumberBox" TargetType="TextBox" BasedOn="{StaticResource InputTextBox}">
-        <Setter Property="Width" Value="74"/>
+        <Setter Property="Width" Value="90"/>
         <Setter Property="TextAlignment" Value="Right"/>
         <Setter Property="Padding" Value="0,0,10,0"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
