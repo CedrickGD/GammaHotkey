@@ -78,6 +78,7 @@ public sealed class MainViewModel : ObservableObject
         if (_mode == mode)
             return;
         _mode = mode;
+        _cycleIndex = -1; // switching modes restarts the cycle
         OnPropertyChanged(nameof(IsCycleMode));
         OnPropertyChanged(nameof(IsDirectMode));
         OnConfigChanged();
@@ -87,7 +88,7 @@ public sealed class MainViewModel : ObservableObject
     public TriggerInput CycleTrigger
     {
         get => _cycleTrigger;
-        set { if (SetField(ref _cycleTrigger, value)) OnConfigChanged(); }
+        set { if (SetField(ref _cycleTrigger, value)) { _cycleIndex = -1; OnConfigChanged(); } }
     }
 
     // ----------------------------------------------------------- live preview
@@ -310,7 +311,6 @@ public sealed class MainViewModel : ObservableObject
             : DirectBindings.Select(b => b.Trigger).Where(t => !t.IsEmpty);
 
         _hooks.UpdateBindings(active, SwallowMouse);
-        _cycleIndex = -1;
     }
 
     // ----------------------------------------------------------- dispatch

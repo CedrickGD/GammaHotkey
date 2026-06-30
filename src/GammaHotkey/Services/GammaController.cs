@@ -15,7 +15,6 @@ public sealed class GammaController : IDisposable
 
     // Original ramp per display device name; "" means "primary via GetDC(0)".
     private readonly Dictionary<string, ushort[]> _originals = new();
-    private bool _capturedOriginals;
 
     private double _currentGamma = GammaPresets.Default;
     private bool _applyToAllMonitors = true;
@@ -103,17 +102,17 @@ public sealed class GammaController : IDisposable
     {
         lock (_gate)
         {
-            if (_capturedOriginals)
-            {
-                foreach (var (name, ramp) in _originals)
-                    WithDc(name, hdc => NativeMethods.SetDeviceGammaRamp(hdc, ramp));
-            }
-            else
-            {
-                // No baseline captured – fall back to a neutral identity ramp.
-                ushort[] identity = BuildRamp(1.0);
-                ForEachTarget(hdc => NativeMethods.SetDeviceGammaRamp(hdc, identity));
-            }
+            // Restore every baseline we actually captured...
+            foreach (var (name, ramp) in _originals)
+                WithDc(name, hdc => NativeMethods.SetDeviceGammaRamp(hdc, ramp));
+
+            // ...and neutralise any current target we have no baseline for, so a
+            // monitor we touched is never left stuck on a modified ramp.
+            ushort[] identity = BuildRamp(1.0);
+            foreach (string name in TargetNames())
+                if (!_originals.ContainsKey(name))
+                    WithDc(name, hdc => NativeMethods.SetDeviceGammaRamp(hdc, identity));
+
             _currentGamma = GammaPresets.Default;
         }
     }
@@ -152,10 +151,7 @@ public sealed class GammaController : IDisposable
                 {
                     var ramp = new ushort[768];
                     if (NativeMethods.GetDeviceGammaRamp(hdc, ramp))
-                    {
                         _originals[name] = ramp;
-                        _capturedOriginals = true;
-                    }
                 });
             }
         }

@@ -28,7 +28,8 @@ public sealed class HookService : IDisposable
     private volatile bool _swallowMouse = true;
     private volatile HashSet<TriggerInput> _bound = new();
 
-    private volatile bool _capturing;
+    private readonly object _captureLock = new();
+    private bool _capturing;                 // guarded by _captureLock
     private Action<TriggerInput>? _onCaptured;
     private Action? _onCaptureCancelled;
 
@@ -79,17 +80,25 @@ public sealed class HookService : IDisposable
     /// <summary>Arms one-shot capture of the next key / mouse button.</summary>
     public void BeginCapture(Action<TriggerInput> onCaptured, Action onCancelled)
     {
-        _onCaptured = onCaptured;
-        _onCaptureCancelled = onCancelled;
-        _capturing = true; // volatile write publishes the callbacks above
+        lock (_captureLock)
+        {
+            _onCaptured = onCaptured;
+            _onCaptureCancelled = onCancelled;
+            _capturing = true;
+        }
     }
 
     public void CancelCapture()
     {
-        var cancelled = _onCaptureCancelled;
-        _capturing = false;
-        _onCaptured = null;
-        _onCaptureCancelled = null;
+        Action? cancelled = null;
+        lock (_captureLock)
+        {
+            if (_capturing)
+            {
+                cancelled = _onCaptureCancelled;
+                ClearCaptureLocked();
+            }
+        }
         if (cancelled != null)
             _dispatcher.BeginInvoke(cancelled);
     }
@@ -130,19 +139,10 @@ public sealed class HookService : IDisposable
                 var k = Marshal.PtrToStructure<NativeMethods.KBDLLHOOKSTRUCT>(lParam);
                 int vk = (int)k.vkCode;
 
-                if (_capturing)
+                if (TryHandleCaptureKey(vk, out bool swallowCapture))
                 {
-                    if (vk == KeyNames.VK_ESCAPE)
-                    {
-                        EndCaptureCancelled();
+                    if (swallowCapture)
                         return (IntPtr)1;
-                    }
-                    if (!KeyNames.IsModifierOrLock(vk))
-                    {
-                        EndCaptureWith(TriggerInput.Key(vk));
-                        return (IntPtr)1; // swallow the captured key
-                    }
-                    // modifier / lock alone: let it through, keep waiting
                 }
                 else if (_listening)
                 {
@@ -183,12 +183,12 @@ public sealed class HookService : IDisposable
 
             if (t is { } trigger)
             {
-                if (_capturing)
+                if (TryHandleCaptureMouse(trigger, out bool swallowCapture))
                 {
-                    EndCaptureWith(trigger);
-                    return (IntPtr)1;
+                    if (swallowCapture)
+                        return (IntPtr)1;
                 }
-                if (_listening && _bound.Contains(trigger))
+                else if (_listening && _bound.Contains(trigger))
                 {
                     RaiseTrigger(trigger);
                     if (_swallowMouse)
@@ -199,24 +199,68 @@ public sealed class HookService : IDisposable
         return NativeMethods.CallNextHookEx(IntPtr.Zero, nCode, wParam, lParam);
     }
 
-    private void EndCaptureWith(TriggerInput t)
+    /// <summary>
+    /// Handles a keyboard event while capture is armed, atomically under the lock.
+    /// Returns true if we are in capture mode (and sets <paramref name="swallow"/>);
+    /// false if not capturing, so the caller runs its normal dispatch path.
+    /// </summary>
+    private bool TryHandleCaptureKey(int vk, out bool swallow)
     {
-        var cb = _onCaptured;
-        _capturing = false;
-        _onCaptured = null;
-        _onCaptureCancelled = null;
-        if (cb != null)
-            _dispatcher.BeginInvoke(() => cb(t));
+        swallow = false;
+        Action<TriggerInput>? captured = null;
+        Action? cancelled = null;
+        lock (_captureLock)
+        {
+            if (!_capturing)
+                return false;
+
+            if (vk == KeyNames.VK_ESCAPE)
+            {
+                cancelled = _onCaptureCancelled;
+                ClearCaptureLocked();
+                swallow = true;
+            }
+            else if (!KeyNames.IsModifierOrLock(vk))
+            {
+                captured = _onCaptured;
+                ClearCaptureLocked();
+                swallow = true;
+            }
+            // else: a lone modifier / lock – stay armed and let it pass through.
+        }
+
+        if (captured != null)
+        {
+            var t = TriggerInput.Key(vk);
+            _dispatcher.BeginInvoke(() => captured(t));
+        }
+        if (cancelled != null)
+            _dispatcher.BeginInvoke(cancelled);
+        return true;
     }
 
-    private void EndCaptureCancelled()
+    private bool TryHandleCaptureMouse(TriggerInput trigger, out bool swallow)
     {
-        var cb = _onCaptureCancelled;
+        swallow = false;
+        Action<TriggerInput>? captured = null;
+        lock (_captureLock)
+        {
+            if (!_capturing)
+                return false;
+            captured = _onCaptured;
+            ClearCaptureLocked();
+            swallow = true;
+        }
+        if (captured != null)
+            _dispatcher.BeginInvoke(() => captured(trigger));
+        return true;
+    }
+
+    private void ClearCaptureLocked()
+    {
         _capturing = false;
         _onCaptured = null;
         _onCaptureCancelled = null;
-        if (cb != null)
-            _dispatcher.BeginInvoke(cb);
     }
 
     private void RaiseTrigger(TriggerInput t)
