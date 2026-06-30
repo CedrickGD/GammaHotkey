@@ -11,29 +11,34 @@ public enum TriggerMode
     Direct,
 }
 
+/// <summary>One user preset: a stable id, an editable name, a value, and whether
+/// it is part of the cycle.</summary>
 public sealed class PresetConfig
 {
-    public GammaLevel Level { get; set; }
-    public double Value { get; set; }
+    public string Id { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public double Value { get; set; } = 1.0;
+    public bool InCycle { get; set; }
 }
 
 public sealed class CycleConfig
 {
     public TriggerInput Trigger { get; set; } = TriggerInput.None;
-    public List<GammaLevel> Steps { get; set; } = new();
     public bool Wrap { get; set; } = true;
 }
 
 public sealed class DirectBindingConfig
 {
     public TriggerInput Trigger { get; set; } = TriggerInput.None;
-    public GammaLevel Level { get; set; }
+    public string PresetId { get; set; } = string.Empty;
 }
 
 /// <summary>Root persisted configuration (written to %APPDATA%\GammaHotkey\config.json).</summary>
 public sealed class AppConfig
 {
-    public int Version { get; set; } = 1;
+    public const int CurrentVersion = 2;
+
+    public int Version { get; set; } = CurrentVersion;
     public List<PresetConfig> Presets { get; set; } = new();
     public TriggerMode Mode { get; set; } = TriggerMode.Cycle;
     public CycleConfig Cycle { get; set; } = new();
@@ -48,23 +53,29 @@ public sealed class AppConfig
 
     public static AppConfig CreateDefault()
     {
-        var cfg = new AppConfig();
+        var cfg = new AppConfig { Version = CurrentVersion };
+
+        var ids = new Dictionary<GammaLevel, string>();
         foreach (var level in GammaPresets.AllLevels)
-            cfg.Presets.Add(new PresetConfig { Level = level, Value = GammaPresets.DefaultValue(level) });
-
-        // A friendly out-of-the-box setup: cycle Normal -> Higher -> High -> Max on F13.
-        cfg.Cycle.Trigger = TriggerInput.Key(KeyNames.VK_F13);
-        cfg.Cycle.Steps = new List<GammaLevel>
         {
-            GammaLevel.Normal,
-            GammaLevel.Higher,
-            GammaLevel.High,
-            GammaLevel.Max,
-        };
+            string id = Guid.NewGuid().ToString("N");
+            ids[level] = id;
+            bool inCycle = level is GammaLevel.Normal or GammaLevel.Higher or GammaLevel.High or GammaLevel.Max;
+            cfg.Presets.Add(new PresetConfig
+            {
+                Id = id,
+                Name = GammaPresets.DisplayName(level),
+                Value = GammaPresets.DefaultValue(level),
+                InCycle = inCycle,
+            });
+        }
 
-        // And a couple of direct examples (also driveable from G HUB via F14/F15).
-        cfg.Direct.Add(new DirectBindingConfig { Trigger = TriggerInput.Key(KeyNames.VK_F13 + 1), Level = GammaLevel.Normal });
-        cfg.Direct.Add(new DirectBindingConfig { Trigger = TriggerInput.Key(KeyNames.VK_F13 + 2), Level = GammaLevel.Max });
+        // Out of the box: F13 cycles Normal -> Higher -> High -> Max.
+        cfg.Cycle.Trigger = TriggerInput.Key(KeyNames.VK_F13);
+
+        // ...and a couple of direct examples on F14 / F15.
+        cfg.Direct.Add(new DirectBindingConfig { Trigger = TriggerInput.Key(KeyNames.VK_F13 + 1), PresetId = ids[GammaLevel.Normal] });
+        cfg.Direct.Add(new DirectBindingConfig { Trigger = TriggerInput.Key(KeyNames.VK_F13 + 2), PresetId = ids[GammaLevel.Max] });
 
         return cfg;
     }

@@ -51,11 +51,7 @@
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                    <Ellipse Width="9" Height="9" VerticalAlignment="Center" Margin="0,0,8,0"
-                             RenderTransformOrigin="0.5,0.5">
-                        <Ellipse.RenderTransform>
-                            <ScaleTransform ScaleX="1" ScaleY="1"/>
-                        </Ellipse.RenderTransform>
+                    <Ellipse Width="9" Height="9" VerticalAlignment="Center" Margin="0,0,8,0">
                         <Ellipse.Style>
                             <Style TargetType="Ellipse">
                                 <Setter Property="Fill" Value="{StaticResource TextDisabled}"/>
@@ -65,10 +61,8 @@
                                         <DataTrigger.EnterActions>
                                             <BeginStoryboard Name="DotPulse">
                                                 <Storyboard RepeatBehavior="Forever" AutoReverse="True">
-                                                    <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                                     To="1.7" Duration="0:0:0.9"/>
-                                                    <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                                     To="1.7" Duration="0:0:0.9"/>
+                                                    <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                                     From="1.0" To="0.35" Duration="0:0:1.0"/>
                                                 </Storyboard>
                                             </BeginStoryboard>
                                         </DataTrigger.EnterActions>
@@ -115,15 +109,28 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <StackPanel Orientation="Horizontal" Margin="0,0,28,14">
-                                        <TextBlock Text="{Binding Name}" Width="92" VerticalAlignment="Center"
-                                                   FontSize="13"/>
-                                        <TextBox Style="{StaticResource NumberBox}"
+                                    <Grid Margin="0,0,16,10">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox Grid.Column="0" Style="{StaticResource InputTextBox}" Margin="0,0,8,0"
+                                                 Text="{Binding Name, UpdateSourceTrigger=LostFocus}"/>
+                                        <TextBox Grid.Column="1" Style="{StaticResource NumberBox}"
                                                  Text="{Binding Value, StringFormat={}{0:0.00}, UpdateSourceTrigger=LostFocus}"/>
-                                    </StackPanel>
+                                        <Button Grid.Column="2" Style="{StaticResource IconGhostButton}" Content="&#x2715;"
+                                                Margin="4,0,0,0" ToolTip="Delete preset"
+                                                Command="{Binding DataContext.RemovePresetCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                CommandParameter="{Binding}"/>
+                                    </Grid>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
+
+                        <Button Style="{StaticResource GhostButton}" Content="+ Add preset"
+                                HorizontalAlignment="Left" Margin="0,4,0,2"
+                                Command="{Binding AddPresetCommand}"/>
 
                         <Grid Margin="0,8,0,0">
                             <Grid.ColumnDefinitions>
@@ -143,7 +150,7 @@
 
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
                             <Button Style="{StaticResource PrimaryButton}" Content="Apply / Test"
-                                    Command="{Binding ApplyPreviewCommand}" Margin="0,0,8,0"/>
+                                    Command="{Binding ApplyPreviewCommand}" Margin="0,0,10,0"/>
                             <Button Style="{StaticResource SecondaryButton}" Content="Reset to 1.0"
                                     Command="{Binding ResetCommand}"/>
                         </StackPanel>
@@ -254,9 +261,9 @@
                                             <TextBlock Grid.Column="1" Text="&#x2192;" FontSize="16" Margin="12,0"
                                                        VerticalAlignment="Center" Foreground="{StaticResource TextSecondary}"/>
                                             <ComboBox Grid.Column="2" Style="{StaticResource ThemedCombo}"
-                                                      ItemsSource="{Binding DataContext.LevelOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                      SelectedValuePath="Level" DisplayMemberPath="Name"
-                                                      SelectedValue="{Binding SelectedLevel}"/>
+                                                      ItemsSource="{Binding DataContext.Presets, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                      SelectedValuePath="Id" DisplayMemberPath="Name"
+                                                      SelectedValue="{Binding PresetId}"/>
                                             <Button Grid.Column="3" Style="{StaticResource IconGhostButton}" Content="&#x2715;"
                                                     Margin="6,0,0,0" ToolTip="Remove"
                                                     Command="{Binding DataContext.RemoveBindingCommand, RelativeSource={RelativeSource AncestorType=Window}}"

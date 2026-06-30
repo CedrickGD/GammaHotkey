@@ -3,12 +3,18 @@ using GammaHotkey.Mvvm;
 
 namespace GammaHotkey.ViewModels;
 
-/// <summary>One editable named gamma preset (Low … Max) plus its "in cycle" flag.</summary>
+/// <summary>One editable gamma preset: a stable id, an editable name + value, and
+/// whether it is included in the cycle.</summary>
 public sealed class PresetViewModel : ObservableObject
 {
-    public GammaLevel Level { get; }
+    public string Id { get; }
 
-    public string Name => GammaPresets.DisplayName(Level);
+    private string _name;
+    public string Name
+    {
+        get => _name;
+        set => SetField(ref _name, string.IsNullOrWhiteSpace(value) ? _name : value.Trim());
+    }
 
     private double _value;
     public double Value
@@ -24,9 +30,10 @@ public sealed class PresetViewModel : ObservableObject
         set => SetField(ref _isInCycle, value);
     }
 
-    public PresetViewModel(GammaLevel level, double value, bool isInCycle)
+    public PresetViewModel(string id, string name, double value, bool isInCycle)
     {
-        Level = level;
+        Id = id;
+        _name = name;
         _value = GammaPresets.Clamp(value);
         _isInCycle = isInCycle;
     }

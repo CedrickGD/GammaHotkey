@@ -28,7 +28,7 @@ public sealed class ConfigStore
             {
                 string json = File.ReadAllText(_path);
                 var cfg = JsonSerializer.Deserialize<AppConfig>(json, AppConfig.JsonOptions);
-                if (cfg != null)
+                if (cfg != null && cfg.Version >= AppConfig.CurrentVersion)
                     return Normalize(cfg);
             }
         }
@@ -53,25 +53,34 @@ public sealed class ConfigStore
         }
     }
 
-    /// <summary>Guarantees every named preset exists exactly once (handles older / partial files).</summary>
+    /// <summary>Repairs ids/names and drops dangling references (handles partial files).</summary>
     private static AppConfig Normalize(AppConfig cfg)
     {
-        var byLevel = cfg.Presets
-            .GroupBy(p => p.Level)
-            .ToDictionary(g => g.Key, g => g.First().Value);
-
-        cfg.Presets = GammaPresets.AllLevels
-            .Select(level => new PresetConfig
-            {
-                Level = level,
-                Value = GammaPresets.Clamp(byLevel.TryGetValue(level, out var v) ? v : GammaPresets.DefaultValue(level)),
-            })
-            .ToList();
-
+        cfg.Presets ??= new List<PresetConfig>();
         cfg.Cycle ??= new CycleConfig();
         cfg.Direct ??= new List<DirectBindingConfig>();
-        if (cfg.Cycle.Steps.Count == 0)
-            cfg.Cycle.Steps = new List<GammaLevel> { GammaLevel.Normal, GammaLevel.High };
+        cfg.SelectedMonitors ??= new List<string>();
+
+        var seenIds = new HashSet<string>();
+        foreach (var p in cfg.Presets)
+        {
+            if (string.IsNullOrWhiteSpace(p.Id) || !seenIds.Add(p.Id))
+            {
+                p.Id = Guid.NewGuid().ToString("N");
+                seenIds.Add(p.Id);
+            }
+            if (string.IsNullOrWhiteSpace(p.Name))
+                p.Name = "Preset";
+            p.Value = GammaPresets.Clamp(p.Value);
+        }
+
+        if (cfg.Presets.Count == 0)
+            cfg.Presets = AppConfig.CreateDefault().Presets;
+
+        // Drop direct bindings that point at a preset that no longer exists.
+        var ids = new HashSet<string>(cfg.Presets.Select(p => p.Id));
+        cfg.Direct = cfg.Direct.Where(b => ids.Contains(b.PresetId)).ToList();
+
         return cfg;
     }
 }

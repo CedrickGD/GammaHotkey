@@ -19,16 +19,16 @@ public sealed class DirectBindingViewModel : ObservableObject
 
     public string TriggerDisplay => _trigger.Describe();
 
-    private GammaLevel _selectedLevel;
-    public GammaLevel SelectedLevel
+    private string _presetId;
+    public string PresetId
     {
-        get => _selectedLevel;
-        set => SetField(ref _selectedLevel, value);
+        get => _presetId;
+        set => SetField(ref _presetId, value);
     }
 
-    public DirectBindingViewModel(TriggerInput trigger, GammaLevel level)
+    public DirectBindingViewModel(TriggerInput trigger, string presetId)
     {
         _trigger = trigger;
-        _selectedLevel = level;
+        _presetId = presetId;
     }
 }

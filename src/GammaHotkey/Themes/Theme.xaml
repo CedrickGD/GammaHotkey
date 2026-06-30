@@ -52,8 +52,8 @@
 
     <!-- Square icon button that matches the secondary button look -->
     <Style x:Key="IconButton" TargetType="Button">
-        <Setter Property="Width" Value="40"/>
-        <Setter Property="Height" Value="36"/>
+        <Setter Property="Width" Value="42"/>
+        <Setter Property="Height" Value="38"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Template">
             <Setter.Value>
@@ -109,8 +109,9 @@
 
     <!-- ============================================================ Buttons -->
     <Style x:Key="PrimaryButton" TargetType="Button">
-        <Setter Property="Height" Value="36"/>
-        <Setter Property="Padding" Value="16,0"/>
+        <Setter Property="Height" Value="38"/>
+        <Setter Property="MinWidth" Value="104"/>
+        <Setter Property="Padding" Value="22,0"/>
         <Setter Property="FontFamily" Value="{StaticResource AppFont}"/>
         <Setter Property="FontSize" Value="13"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
@@ -144,8 +145,9 @@
     </Style>
 
     <Style x:Key="SecondaryButton" TargetType="Button">
-        <Setter Property="Height" Value="36"/>
-        <Setter Property="Padding" Value="16,0"/>
+        <Setter Property="Height" Value="38"/>
+        <Setter Property="MinWidth" Value="92"/>
+        <Setter Property="Padding" Value="18,0"/>
         <Setter Property="FontFamily" Value="{StaticResource AppFont}"/>
         <Setter Property="FontSize" Value="13"/>
         <Setter Property="FontWeight" Value="SemiBold"/>

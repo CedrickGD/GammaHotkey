@@ -11,9 +11,6 @@ using Microsoft.Win32;
 
 namespace GammaHotkey.ViewModels;
 
-/// <summary>A selectable preset in the Direct-binding combo box.</summary>
-public sealed record LevelOption(GammaLevel Level, string Name);
-
 public sealed class MainViewModel : ObservableObject
 {
     private readonly GammaController _gamma;
@@ -49,6 +46,8 @@ public sealed class MainViewModel : ObservableObject
         AddBindingCommand = new RelayCommand(AddBinding);
         RemoveBindingCommand = new RelayCommand(RemoveBinding);
         RefreshMonitorsCommand = new RelayCommand(RefreshMonitors);
+        AddPresetCommand = new RelayCommand(AddPreset);
+        RemovePresetCommand = new RelayCommand(RemovePreset);
 
         LoadFrom(_store.Load());
     }
@@ -57,9 +56,6 @@ public sealed class MainViewModel : ObservableObject
 
     public ObservableCollection<PresetViewModel> Presets { get; } = new();
     public ObservableCollection<DirectBindingViewModel> DirectBindings { get; } = new();
-
-    public IReadOnlyList<LevelOption> LevelOptions { get; } =
-        GammaPresets.AllLevels.Select(l => new LevelOption(l, GammaPresets.DisplayName(l))).ToList();
 
     // ----------------------------------------------------------- trigger mode
 
@@ -181,7 +177,7 @@ public sealed class MainViewModel : ObservableObject
             if (sel.Count == 0)
                 return "All monitors";
             if (sel.Count == 1)
-                return sel[0].Display;
+                return sel[0].Short;
             return $"{sel.Count} of {Monitors.Count} monitors";
         }
     }
@@ -230,6 +226,8 @@ public sealed class MainViewModel : ObservableObject
     public RelayCommand AddBindingCommand { get; }
     public RelayCommand RemoveBindingCommand { get; }
     public RelayCommand RefreshMonitorsCommand { get; }
+    public RelayCommand AddPresetCommand { get; }
+    public RelayCommand RemovePresetCommand { get; }
 
     // ----------------------------------------------------------- load / save
 
@@ -242,7 +240,7 @@ public sealed class MainViewModel : ObservableObject
         Presets.Clear();
         foreach (var pc in cfg.Presets)
         {
-            var vm = new PresetViewModel(pc.Level, pc.Value, cfg.Cycle.Steps.Contains(pc.Level));
+            var vm = new PresetViewModel(pc.Id, pc.Name, pc.Value, pc.InCycle);
             vm.PropertyChanged += OnPresetChanged;
             Presets.Add(vm);
         }
@@ -252,7 +250,7 @@ public sealed class MainViewModel : ObservableObject
         DirectBindings.Clear();
         foreach (var dc in cfg.Direct)
         {
-            var vm = new DirectBindingViewModel(dc.Trigger, dc.Level);
+            var vm = new DirectBindingViewModel(dc.Trigger, dc.PresetId);
             vm.PropertyChanged += OnDirectChanged;
             DirectBindings.Add(vm);
         }
@@ -305,20 +303,12 @@ public sealed class MainViewModel : ObservableObject
         };
 
         foreach (var p in Presets)
-            cfg.Presets.Add(new PresetConfig { Level = p.Level, Value = p.Value });
+            cfg.Presets.Add(new PresetConfig { Id = p.Id, Name = p.Name, Value = p.Value, InCycle = p.IsInCycle });
 
-        cfg.Cycle = new CycleConfig
-        {
-            Trigger = _cycleTrigger,
-            Wrap = _cycleWrap,
-            Steps = Presets.Where(p => p.IsInCycle)
-                           .OrderBy(p => (int)p.Level)
-                           .Select(p => p.Level)
-                           .ToList(),
-        };
+        cfg.Cycle = new CycleConfig { Trigger = _cycleTrigger, Wrap = _cycleWrap };
 
         foreach (var b in DirectBindings)
-            cfg.Direct.Add(new DirectBindingConfig { Trigger = b.Trigger, Level = b.SelectedLevel });
+            cfg.Direct.Add(new DirectBindingConfig { Trigger = b.Trigger, PresetId = b.PresetId });
 
         return cfg;
     }
@@ -370,9 +360,11 @@ public sealed class MainViewModel : ObservableObject
         foreach (var mon in _gamma.ListMonitors())
         {
             string shortName = mon.DeviceName.Replace(@"\\.\", string.Empty);
-            string label = $"{shortName} — {mon.FriendlyName}" + (mon.IsPrimary ? "  (primary)" : string.Empty);
+            string primaryTag = mon.IsPrimary ? "  (primary)" : string.Empty;
+            string label = $"{shortName} — {mon.FriendlyName}{primaryTag}";
+            string shortLabel = $"{shortName}{primaryTag}";
             bool selected = !hadList || prevSelected.Contains(mon.DeviceName);
-            var vm = new MonitorOptionViewModel(mon.DeviceName, label, mon.IsPrimary, selected);
+            var vm = new MonitorOptionViewModel(mon.DeviceName, label, shortLabel, mon.IsPrimary, selected);
             vm.PropertyChanged += OnMonitorChanged;
             Monitors.Add(vm);
         }
@@ -414,7 +406,7 @@ public sealed class MainViewModel : ObservableObject
             var binding = DirectBindings.FirstOrDefault(b => b.Trigger == t);
             if (binding == null)
                 return;
-            var preset = Presets.FirstOrDefault(p => p.Level == binding.SelectedLevel);
+            var preset = Presets.FirstOrDefault(p => p.Id == binding.PresetId);
             if (preset != null)
                 ApplyPreset(preset);
         }
@@ -422,7 +414,7 @@ public sealed class MainViewModel : ObservableObject
 
     private void AdvanceCycle()
     {
-        var steps = Presets.Where(p => p.IsInCycle).OrderBy(p => (int)p.Level).ToList();
+        var steps = Presets.Where(p => p.IsInCycle).ToList();
         if (steps.Count == 0)
         {
             SetStatus("No presets in the cycle", warning: true);
@@ -519,9 +511,34 @@ public sealed class MainViewModel : ObservableObject
 
     private void AddBinding(object? _)
     {
-        var vm = new DirectBindingViewModel(TriggerInput.None, GammaLevel.Normal);
+        string presetId = Presets.FirstOrDefault()?.Id ?? string.Empty;
+        var vm = new DirectBindingViewModel(TriggerInput.None, presetId);
         vm.PropertyChanged += OnDirectChanged;
         DirectBindings.Add(vm);
+        OnConfigChanged();
+    }
+
+    private void AddPreset(object? _)
+    {
+        var vm = new PresetViewModel(Guid.NewGuid().ToString("N"), $"Preset {Presets.Count + 1}", 1.20, false);
+        vm.PropertyChanged += OnPresetChanged;
+        Presets.Add(vm);
+        OnConfigChanged();
+    }
+
+    private void RemovePreset(object? parameter)
+    {
+        if (parameter is not PresetViewModel preset || Presets.Count <= 1)
+            return;
+
+        preset.PropertyChanged -= OnPresetChanged;
+        Presets.Remove(preset);
+
+        // Repoint any direct bindings that referenced it to the first remaining preset.
+        string fallback = Presets[0].Id;
+        foreach (var b in DirectBindings.Where(b => b.PresetId == preset.Id).ToList())
+            b.PresetId = fallback;
+
         OnConfigChanged();
     }
 

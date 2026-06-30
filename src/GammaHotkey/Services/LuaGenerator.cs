@@ -16,8 +16,7 @@ public static class LuaGenerator
 
     public static string Generate(AppConfig cfg)
     {
-        var presetValues = cfg.Presets.ToDictionary(p => p.Level, p => p.Value);
-        double ValueOf(GammaLevel l) => presetValues.TryGetValue(l, out var v) ? v : GammaPresets.DefaultValue(l);
+        var byId = cfg.Presets.ToDictionary(p => p.Id, p => p);
 
         // Collect the keyboard hotkeys that the ACTIVE mode actually listens for.
         var hotkeys = new List<(int Vk, string Description)>();
@@ -26,7 +25,7 @@ public static class LuaGenerator
         {
             if (cfg.Cycle.Trigger.Kind == TriggerKind.Keyboard && !cfg.Cycle.Trigger.IsEmpty)
             {
-                string steps = string.Join(" -> ", cfg.Cycle.Steps.Select(GammaPresets.DisplayName));
+                string steps = string.Join(" -> ", cfg.Presets.Where(p => p.InCycle).Select(p => p.Name));
                 hotkeys.Add((cfg.Cycle.Trigger.VirtualKey, $"advance gamma cycle ({steps})"));
             }
         }
@@ -34,10 +33,11 @@ public static class LuaGenerator
         {
             foreach (var b in cfg.Direct)
             {
-                if (b.Trigger.Kind == TriggerKind.Keyboard && !b.Trigger.IsEmpty)
+                if (b.Trigger.Kind == TriggerKind.Keyboard && !b.Trigger.IsEmpty
+                    && byId.TryGetValue(b.PresetId, out var preset))
                 {
-                    string v = ValueOf(b.Level).ToString("0.00", CultureInfo.InvariantCulture);
-                    hotkeys.Add((b.Trigger.VirtualKey, $"set gamma to {GammaPresets.DisplayName(b.Level)} ({v})"));
+                    string v = preset.Value.ToString("0.00", CultureInfo.InvariantCulture);
+                    hotkeys.Add((b.Trigger.VirtualKey, $"set gamma to {preset.Name} ({v})"));
                 }
             }
         }
