@@ -1,0 +1,283 @@
+<Window x:Class="GammaHotkey.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ctrl="clr-namespace:GammaHotkey.Controls"
+        xmlns:conv="clr-namespace:GammaHotkey.Mvvm"
+        xmlns:vm="clr-namespace:GammaHotkey.ViewModels"
+        Title="GammaHotkey" Height="680" Width="900"
+        MinHeight="580" MinWidth="740"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource BgWindow}"
+        UseLayoutRounding="True" SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Ideal"
+        TextElement.Foreground="{StaticResource TextPrimary}"
+        FontFamily="{StaticResource AppFont}"
+        Icon="pack://application:,,,/Assets/app.ico"
+        d:DataContext="{d:DesignInstance Type=vm:MainViewModel}"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        mc:Ignorable="d"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">
+
+    <Window.Resources>
+        <conv:ZeroCountToVisibilityConverter x:Key="ZeroCount"/>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- ================================================= HEADER -->
+        <Border Grid.Row="0" Padding="24,16" Background="{StaticResource BgWindow}"
+                BorderBrush="{StaticResource Border}" BorderThickness="0,0,0,1">
+            <Grid>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Width="30" Height="30" CornerRadius="8" Background="{StaticResource Accent}">
+                        <TextBlock Text="&#x03B3;" FontSize="18" FontWeight="Bold"
+                                   Foreground="{StaticResource OnAccent}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="GammaHotkey" FontSize="18" FontWeight="SemiBold"/>
+                        <TextBlock Text="Gamma hotkeys for G HUB" FontSize="12"
+                                   Foreground="{StaticResource TextSecondary}"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <Ellipse Width="9" Height="9" VerticalAlignment="Center" Margin="0,0,8,0">
+                        <Ellipse.Style>
+                            <Style TargetType="Ellipse">
+                                <Setter Property="Fill" Value="{StaticResource TextDisabled}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsListening}" Value="True">
+                                        <Setter Property="Fill" Value="{StaticResource Success}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Ellipse.Style>
+                    </Ellipse>
+                    <TextBlock Text="{Binding ListeningLabel}" VerticalAlignment="Center" Margin="0,0,12,0" FontSize="13">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsListening}" Value="True">
+                                        <Setter Property="Foreground" Value="{StaticResource Success}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <CheckBox Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"
+                              IsChecked="{Binding IsListening}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ================================================= BODY -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="24,20,24,4">
+            <StackPanel>
+
+                <!-- GAMMA PRESETS -->
+                <Border Style="{StaticResource Card}" Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="GAMMA PRESETS"/>
+
+                        <ItemsControl ItemsSource="{Binding Presets}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="2"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,16,12">
+                                        <TextBlock Text="{Binding Name}" Width="80" VerticalAlignment="Center"
+                                                   FontSize="13"/>
+                                        <TextBox Style="{StaticResource NumberBox}"
+                                                 Text="{Binding Value, StringFormat={}{0:0.00}, UpdateSourceTrigger=LostFocus}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <Grid Margin="0,8,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Live preview" VerticalAlignment="Center"
+                                       Foreground="{StaticResource TextSecondary}" FontSize="13" Margin="0,0,16,0"/>
+                            <Slider Grid.Column="1" Style="{StaticResource PreviewSlider}" VerticalAlignment="Center"
+                                    Minimum="0.1" Maximum="2.5"
+                                    Value="{Binding PreviewGamma, Mode=TwoWay}"/>
+                            <TextBlock Grid.Column="2" Text="{Binding PreviewGammaText}" Width="48"
+                                       TextAlignment="Right" FontSize="14" FontWeight="SemiBold"
+                                       VerticalAlignment="Center" Margin="16,0,0,0"/>
+                        </Grid>
+
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+                            <Button Style="{StaticResource PrimaryButton}" Content="Apply / Test"
+                                    Command="{Binding ApplyPreviewCommand}" Margin="0,0,8,0"/>
+                            <Button Style="{StaticResource SecondaryButton}" Content="Reset to 1.0"
+                                    Command="{Binding ResetCommand}"/>
+                        </StackPanel>
+
+                        <TextBlock Style="{StaticResource HelperText}" Margin="0,12,0,0"
+                                   Text="Apply changes your screen gamma right now so you can see it. Higher = brighter. Reset restores Windows default (1.0)."/>
+                    </StackPanel>
+                </Border>
+
+                <!-- TRIGGERS -->
+                <Border Style="{StaticResource Card}" Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="TRIGGERS"/>
+
+                        <!-- Segmented control -->
+                        <Border Background="{StaticResource SurfaceInput}" CornerRadius="8" Padding="3"
+                                HorizontalAlignment="Left" BorderBrush="{StaticResource Border}" BorderThickness="1">
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton Style="{StaticResource SegmentRadio}" Content="Cycle mode"
+                                             GroupName="mode" IsChecked="{Binding IsCycleMode}"/>
+                                <RadioButton Style="{StaticResource SegmentRadio}" Content="Direct bindings"
+                                             GroupName="mode" IsChecked="{Binding IsDirectMode}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Cycle panel -->
+                        <StackPanel Margin="0,16,0,0" Visibility="{Binding IsCycleMode, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Style="{StaticResource HelperText}"
+                                       Text="One key steps through the presets you pick, in order."/>
+                            <TextBlock Text="Presets in cycle" Style="{StaticResource FieldLabel}" Margin="0,14,0,8"/>
+                            <ItemsControl ItemsSource="{Binding Presets}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <ToggleButton Style="{StaticResource ChipToggle}" Content="{Binding Name}"
+                                                      IsChecked="{Binding IsInCycle}"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Text="Advance key" Style="{StaticResource FieldLabel}" Margin="0,8,0,8"/>
+                            <ctrl:KeyCapturePill HorizontalAlignment="Left" Trigger="{Binding CycleTrigger, Mode=TwoWay}"/>
+                            <TextBlock Style="{StaticResource HelperText}" Margin="0,10,0,0"
+                                       Text="Each press jumps to the next preset, then wraps back to the first. Tip: pick an F13–F24 key (the ▾ menu) and have G HUB send it from a mouse button."/>
+                        </StackPanel>
+
+                        <!-- Direct panel -->
+                        <StackPanel Margin="0,16,0,0" Visibility="{Binding IsDirectMode, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Style="{StaticResource HelperText}"
+                                       Text="Bind one key to one preset. Press it to jump straight there."/>
+
+                            <TextBlock Style="{StaticResource HelperText}" Margin="0,12,0,0"
+                                       Visibility="{Binding DirectBindings.Count, Converter={StaticResource ZeroCount}}"
+                                       Text="No bindings yet. Add one to map a key to a preset."/>
+
+                            <ItemsControl ItemsSource="{Binding DirectBindings}" Margin="0,8,0,0">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,0,0,8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="200"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="160"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <ctrl:KeyCapturePill Grid.Column="0" Trigger="{Binding Trigger, Mode=TwoWay}"/>
+                                            <TextBlock Grid.Column="1" Text="&#x2192;" FontSize="16" Margin="12,0"
+                                                       VerticalAlignment="Center" Foreground="{StaticResource TextSecondary}"/>
+                                            <ComboBox Grid.Column="2" Style="{StaticResource ThemedCombo}"
+                                                      ItemsSource="{Binding DataContext.LevelOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                      SelectedValuePath="Level" DisplayMemberPath="Name"
+                                                      SelectedValue="{Binding SelectedLevel}"/>
+                                            <Button Grid.Column="3" Style="{StaticResource IconGhostButton}" Content="&#x2715;"
+                                                    Margin="6,0,0,0" ToolTip="Remove"
+                                                    Command="{Binding DataContext.RemoveBindingCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <Button Style="{StaticResource GhostButton}" Content="+ Add binding"
+                                    HorizontalAlignment="Left" Margin="0,4,0,0"
+                                    Command="{Binding AddBindingCommand}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- G HUB EXPORT -->
+                <Border Style="{StaticResource Card}" Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource SectionHeader}" Text="G HUB EXPORT"/>
+
+                        <Grid>
+                            <Button Style="{StaticResource PrimaryButton}" Content="Generate Lua script"
+                                    HorizontalAlignment="Left" Command="{Binding GenerateLuaCommand}"/>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button Style="{StaticResource SecondaryButton}" Content="Copy"
+                                        Command="{Binding CopyLuaCommand}" Margin="0,0,8,0"/>
+                                <Button Style="{StaticResource SecondaryButton}" Content="Save .lua"
+                                        Command="{Binding SaveLuaCommand}"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <Border Margin="0,14,0,0" CornerRadius="8" Background="{StaticResource SurfaceInput}"
+                                BorderBrush="{StaticResource Border}" BorderThickness="1" MaxHeight="200">
+                            <TextBox Text="{Binding LuaScript, Mode=OneWay}" IsReadOnly="True"
+                                     Background="Transparent" BorderThickness="0" Foreground="{StaticResource TextPrimary}"
+                                     FontFamily="{StaticResource MonoFont}" FontSize="12.5" Padding="12"
+                                     VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                                     TextWrapping="NoWrap" AcceptsReturn="True"/>
+                        </Border>
+
+                        <StackPanel Margin="0,14,0,0">
+                            <TextBlock Style="{StaticResource HelperText}" Text="1. In G HUB, open your profile → Assignments → Scripting."/>
+                            <TextBlock Style="{StaticResource HelperText}" Margin="0,4,0,0" Text="2. Paste this script (or open the saved .lua), then save."/>
+                            <TextBlock Style="{StaticResource HelperText}" Margin="0,4,0,0" Text="3. Keep GammaHotkey running with Listening turned on."/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- ================================================= FOOTER -->
+        <Border Grid.Row="2" Padding="24,12" Background="{StaticResource BgWindow}"
+                BorderBrush="{StaticResource Border}" BorderThickness="0,1,0,0">
+            <Grid>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <CheckBox Style="{StaticResource ThemedCheck}" Content="Run on startup"
+                              IsChecked="{Binding RunOnStartup}"/>
+                    <CheckBox Style="{StaticResource ThemedCheck}" Content="All monitors" Margin="20,0,0,0"
+                              IsChecked="{Binding ApplyToAllMonitors}"/>
+                    <TextBlock Text="Closing the window keeps it running in the tray."
+                               Foreground="{StaticResource TextSecondary}" FontSize="12"
+                               VerticalAlignment="Center" Margin="20,0,0,0"/>
+                </StackPanel>
+
+                <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"
+                           Text="{Binding Status}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding StatusIsWarning}" Value="True">
+                                    <Setter Property="Foreground" Value="{StaticResource Danger}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

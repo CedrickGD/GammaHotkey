@@ -1,0 +1,22 @@
+# .NET build output
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+publish/
+*.user
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.suo
+*.userprefs
+
+# Local config the app writes at runtime (keep it out of the repo)
+config/
+
+# OS cruft
+Thumbs.db
+desktop.ini

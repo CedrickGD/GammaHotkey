@@ -1,0 +1,50 @@
+<UserControl x:Class="GammaHotkey.Controls.KeyCapturePill"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             FontFamily="{StaticResource AppFont}">
+    <Border x:Name="Pill" CornerRadius="8" Height="34" MinWidth="180"
+            Background="{StaticResource SurfaceInput}"
+            BorderBrush="{StaticResource Border}" BorderThickness="1">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <Border x:Name="ArmArea" Grid.Column="0" Background="Transparent" Cursor="Hand"
+                    MouseLeftButtonUp="ArmArea_Click">
+                <TextBlock x:Name="DisplayTextBlock" Margin="12,0" VerticalAlignment="Center"
+                           FontSize="13" TextTrimming="CharacterEllipsis"/>
+            </Border>
+
+            <Button x:Name="ClearButton" Grid.Column="1" Style="{StaticResource IconGhostButton}"
+                    Content="&#x2715;" ToolTip="Clear" Click="ClearButton_Click" Visibility="Collapsed"/>
+
+            <Button x:Name="MoreButton" Grid.Column="2" Style="{StaticResource IconGhostButton}"
+                    Content="&#x25BE;" ToolTip="Pick an F13–F24 key (for G HUB)" Click="MoreButton_Click"/>
+
+            <Popup x:Name="KeyPopup" Grid.Column="2" Placement="Bottom"
+                   PlacementTarget="{Binding ElementName=MoreButton}"
+                   StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade" VerticalOffset="4">
+                <Border Background="{StaticResource SurfaceElevated}" BorderBrush="{StaticResource Border}"
+                        BorderThickness="1" CornerRadius="8" Padding="6" Effect="{StaticResource CardShadow}">
+                    <StackPanel MinWidth="150">
+                        <TextBlock Text="G HUB keys (sent by Lua)" Margin="8,4,8,6"
+                                   FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextSecondary}"/>
+                        <ItemsControl x:Name="KeyList">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Content="{Binding Display}" Tag="{Binding}"
+                                            Click="KeyOption_Click"
+                                            Height="30" HorizontalContentAlignment="Left"
+                                            Style="{StaticResource GhostButton}"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+            </Popup>
+        </Grid>
+    </Border>
+</UserControl>
