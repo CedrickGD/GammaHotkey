@@ -293,7 +293,7 @@ public sealed class MainViewModel : ObservableObject
     {
         var cfg = new AppConfig
         {
-            Version = 1,
+            Version = AppConfig.CurrentVersion,
             Mode = _mode,
             SwallowMouse = SwallowMouse,
             ApplyToAllMonitors = _allMonitors,
@@ -375,6 +375,14 @@ public sealed class MainViewModel : ObservableObject
     {
         if (e.PropertyName != nameof(MonitorOptionViewModel.IsSelected))
             return;
+
+        if (sender is MonitorOptionViewModel vm && vm.IsSelected && _allMonitors)
+        {
+            _allMonitors = false;
+            OnPropertyChanged(nameof(AllMonitors));
+            OnPropertyChanged(nameof(IndividualMonitorsEnabled));
+        }
+
         PushTargets();
         OnPropertyChanged(nameof(MonitorsSummary));
         Save();

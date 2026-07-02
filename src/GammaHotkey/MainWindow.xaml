@@ -361,8 +361,7 @@
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
                                             <CheckBox Style="{StaticResource ThemedCheck}" Margin="2,5" Content="{Binding Display}"
-                                                      IsChecked="{Binding IsSelected}"
-                                                      IsEnabled="{Binding DataContext.IndividualMonitorsEnabled, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
+                                                      IsChecked="{Binding IsSelected}"/>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
