@@ -18,9 +18,9 @@
          advisory that wants it configured via the Forms API instead. -->
     <NoWarn>$(NoWarn);WFO0003</NoWarn>
     <Product>GammaHotkey</Product>
-    <Version>1.0.0</Version>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <FileVersion>1.0.0.0</FileVersion>
+    <Version>1.1.0</Version>
+    <AssemblyVersion>1.1.0.0</AssemblyVersion>
+    <FileVersion>1.1.0.0</FileVersion>
 
     <!-- Crisp UI on high-DPI displays + asInvoker (no admin needed) -->
     <ApplicationManifest>app.manifest</ApplicationManifest>
