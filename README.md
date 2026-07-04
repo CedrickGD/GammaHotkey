@@ -6,7 +6,8 @@ mouse button, press it in‑game, and your gamma jumps to a preset. A beautiful 
 Windows tray app that also **generates the Logitech G HUB Lua script** for you.
 **Works on any GPU — NVIDIA, AMD and Intel.**
 
-> **γ** Built with C# / WPF (.NET 9). Single window, lives in the system tray, no installer.
+> **γ** Built with C# / WPF (.NET 9). Single window, lives in the system tray, no installer —
+> ships as **one self-contained exe** with the .NET runtime bundled, so there's nothing to install.
 
 ---
 
@@ -35,18 +36,28 @@ lookup table the NVIDIA/AMD/Intel control‑panel gamma sliders write to — so 
 
 ---
 
-## Build & run
+## Get it / build it
 
-You need the **.NET 9 SDK** (or newer) on Windows.
+### For users — one exe, nothing to install
+
+GammaHotkey ships as a **single self-contained `GammaHotkey.exe`** with the .NET
+runtime bundled inside (~70 MB). Download it, double-click it, done — **no .NET
+install, no installer, no extra files**.
+
+### For developers
+
+Building from source needs the **.NET 9 SDK** (or newer) on Windows.
 
 ```powershell
 cd GammaHotkey
-dotnet build -c Release
-# run it:
-.\src\GammaHotkey\bin\Release\net9.0-windows\GammaHotkey.exe
+# produce the self-contained single exe (what users get):
+dotnet publish src\GammaHotkey\GammaHotkey.csproj -c Release -o publish
+.\publish\GammaHotkey.exe
 ```
 
-Or open `GammaHotkey.sln` in Visual Studio 2022+ and press F5.
+For a Windows-on-ARM build, add `-r win-arm64`. A plain `dotnet build` (and F5 in
+Visual Studio 2022+ via `GammaHotkey.sln`) still makes a fast framework-dependent
+debug build — the runtime is only bundled when publishing.
 
 The app starts as a window; **closing or minimizing it tucks it into the system tray**
 (right‑click the tray icon for Settings / Listening / Run on startup / Exit). Launch

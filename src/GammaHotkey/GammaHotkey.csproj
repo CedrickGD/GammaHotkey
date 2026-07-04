@@ -27,6 +27,19 @@
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
   </PropertyGroup>
 
+  <!-- `dotnet publish` produces a single self-contained exe with the .NET runtime
+       bundled, so end users don't need to install anything. Gated on _IsPublishing
+       so normal builds / F5 stay fast and framework-dependent.
+       (WPF doesn't support trimming, so the runtime ships uncut but compressed.) -->
+  <PropertyGroup Condition="'$(_IsPublishing)' == 'true'">
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
   <ItemGroup>
     <!-- Also embed the icon as a WPF resource so the window/tray can load it at runtime. -->
     <Resource Include="Assets\app.ico" />
