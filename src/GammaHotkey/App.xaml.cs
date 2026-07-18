@@ -36,6 +36,10 @@ public partial class App : Application
             return;
         }
 
+        // Keep the global hook alive while minimized to the tray: Windows 11 throttles
+        // background processes, which otherwise starves the low-level hook.
+        ProcessTuning.DisablePowerThrottling();
+
         // Make sure a crash / sign-out never leaves the screen on a weird ramp.
         AppDomain.CurrentDomain.UnhandledException += (_, _) => SafeRestoreGamma();
         SessionEnding += (_, _) => SafeRestoreGamma();

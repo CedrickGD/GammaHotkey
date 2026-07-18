@@ -59,6 +59,9 @@ public sealed class HookService : IDisposable
         {
             IsBackground = true,
             Name = "GammaHotkey.HookPump",
+            // Above-normal so the hook callback keeps beating the LowLevelHooksTimeout
+            // even when a fullscreen game is hammering the CPU.
+            Priority = ThreadPriority.AboveNormal,
         };
         _thread.SetApartmentState(ApartmentState.STA);
         _thread.Start();

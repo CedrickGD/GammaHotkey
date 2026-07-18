@@ -163,3 +163,5 @@ No third‑party UI libraries — the whole look is hand‑rolled WPF styles.
   (so it doesn’t also page‑back / type) — that’s expected for a hotkey. F13–F24 are the
   cleanest choice because nothing else uses them.
 - Run‑on‑startup is a per‑user entry (`HKCU\…\Run`) — **no admin required**.
+- Hotkeys keep firing while the app is **minimized to the tray** — it opts out of
+  Windows 11 background power throttling (EcoQoS) so the global hook is never starved.

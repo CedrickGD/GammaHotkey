@@ -83,6 +83,32 @@ internal static class NativeMethods
     [DllImport("kernel32.dll")]
     public static extern uint GetCurrentThreadId();
 
+    // ---------------------------------------------------------------- Power throttling (EcoQoS opt-out)
+
+    public enum PROCESS_INFORMATION_CLASS
+    {
+        ProcessPowerThrottling = 4,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct PROCESS_POWER_THROTTLING_STATE
+    {
+        public uint Version;
+        public uint ControlMask;
+        public uint StateMask;
+    }
+
+    public const uint PROCESS_POWER_THROTTLING_CURRENT_VERSION = 1;
+    public const uint PROCESS_POWER_THROTTLING_EXECUTION_SPEED = 0x1;
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool SetProcessInformation(IntPtr hProcess, PROCESS_INFORMATION_CLASS informationClass,
+        ref PROCESS_POWER_THROTTLING_STATE information, uint informationSize);
+
+    [DllImport("kernel32.dll")]
+    public static extern IntPtr GetCurrentProcess();
+
     // ---------------------------------------------------------------- Dark title bar
 
     [DllImport("dwmapi.dll")]
